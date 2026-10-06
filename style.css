@@ -2397,6 +2397,182 @@ button {
     color: white;
 }
 
+/* ==========================================
+   LIVE STREAMS
+   ========================================== */
+
+.live-section {
+    width: min(1200px, 92%);
+    margin: 70px auto;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.section-label {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+    opacity: .7;
+}
+
+.section-header h2 {
+    margin: 0;
+    font-size: 32px;
+}
+
+.section-header p {
+    margin: 8px 0 0;
+    opacity: .65;
+}
+
+.live-streams-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(
+            auto-fill,
+            minmax(280px, 1fr)
+        );
+
+    gap: 24px;
+}
+
+.live-stream-card {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+    overflow: hidden;
+    border-radius: 18px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+    transition:
+        transform .2s ease,
+        border-color .2s ease,
+        box-shadow .2s ease;
+}
+
+.live-stream-card:hover {
+    transform: translateY(-5px);
+    border-color: rgba(255,70,70,.5);
+    box-shadow:
+        0 15px 40px rgba(0,0,0,.25);
+}
+
+.stream-thumbnail {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: #111;
+}
+
+.stream-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.live-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    background: #e53935;
+    color: white;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.stream-viewers {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    padding: 6px 9px;
+    border-radius: 8px;
+    background: rgba(0,0,0,.75);
+    color: white;
+    font-size: 12px;
+}
+
+.stream-card-info {
+    display: flex;
+    gap: 13px;
+    padding: 16px;
+}
+
+.stream-card-avatar {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #252525;
+    font-weight: 800;
+}
+
+.stream-card-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.stream-card-text {
+    min-width: 0;
+}
+
+.stream-card-text h3 {
+    margin: 0 0 6px;
+    font-size: 16px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stream-card-text p {
+    margin: 0 0 5px;
+    opacity: .7;
+    font-size: 14px;
+}
+
+.stream-card-text span {
+    font-size: 12px;
+    opacity: .55;
+}
+
+.live-loading,
+.no-live-streams {
+    width: 100%;
+    padding: 60px 20px;
+    text-align: center;
+    border-radius: 18px;
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.07);
+}
+
+.empty-icon {
+    font-size: 42px;
+    margin-bottom: 12px;
+}
+
+.no-live-streams h3 {
+    margin: 0 0 8px;
+}
+
+.no-live-streams p {
+    margin: 0;
+    opacity: .65;
+}
 
 /* =====================================================
    ADMIN
