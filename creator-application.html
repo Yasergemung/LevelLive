@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>كن صانع محتوى - YaserStream</title>
+
+    <link rel="stylesheet" href="./style.css">
+
+</head>
+
+<body>
+
+    <div class="auth-container">
+
+        <div class="auth-box creator-application-box">
+
+            <a href="./index.html"
+               class="auth-logo">
+                Yaser<span>Stream</span>
+            </a>
+
+            <div class="application-icon">
+                🎥
+            </div>
+
+            <h2>
+                كن صانع محتوى
+            </h2>
+
+            <p class="auth-description">
+                قدم طلبك للانضمام إلى صناع المحتوى في YaserStream.
+                سيتم مراجعة طلبك من الإدارة قبل تفعيل حساب Creator.
+            </p>
+
+
+            <form id="creatorApplicationForm">
+
+                <label>
+                    نوع المحتوى
+                </label>
+
+                <select id="contentType" required>
+
+                    <option value="">
+                        اختر نوع المحتوى
+                    </option>
+
+                    <option value="gaming">
+                        🎮 Gaming
+                    </option>
+
+                    <option value="just_chatting">
+                        💬 Just Chatting
+                    </option>
+
+                    <option value="education">
+                        📚 تعليم
+                    </option>
+
+                    <option value="other">
+                        ⭐ محتوى آخر
+                    </option>
+
+                </select>
+
+
+                <label>
+                    عرفنا بمحتواك
+                </label>
+
+                <textarea
+                    id="description"
+                    placeholder="اكتب نوع المحتوى الذي تريد تقديمه على YaserStream..."
+                    required
+                ></textarea>
+
+
+                <label>
+                    رابط حسابك أو قناتك
+                </label>
+
+                <input
+                    type="url"
+                    id="socialLink"
+                    placeholder="https://youtube.com/..."
+                >
+
+
+                <button
+                    type="submit"
+                    class="application-submit"
+                >
+                    إرسال الطلب
+                </button>
+
+            </form>
+
+
+            <p id="applicationMessage"></p>
+
+
+            <a
+                href="./index.html"
+                class="back-home"
+            >
+                ← العودة للرئيسية
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script src="./supabase.js"></script>
+
+    <script src="./creator-application.js"></script>
+
+</body>
+
+</html>
