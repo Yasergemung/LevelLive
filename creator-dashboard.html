@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creator Dashboard | LevelLive</title>
+    <link rel="stylesheet" href="./creator-dashboard.css">
+</head>
+<body>
+    <header class="topbar">
+        <div>
+            <div class="brand">LevelLive</div>
+            <div class="subtitle">Creator Dashboard</div>
+        </div>
+        <div class="top-actions">
+            <a href="./index.html">الصفحة الرئيسية</a>
+            <button id="logoutButton">تسجيل الخروج</button>
+        </div>
+    </header>
+
+    <main class="container">
+        <section id="accessState" class="panel loading">جاري التحقق من صلاحيات الحساب...</section>
+
+        <section id="dashboard" class="hidden">
+            <div class="welcome">
+                <div>
+                    <p class="eyebrow">لوحة صانع المحتوى</p>
+                    <h1>أهلاً، <span id="creatorName">Creator</span> 👋</h1>
+                    <p>من هنا تقدر تدير البثوث الخاصة بك.</p>
+                </div>
+                <div class="role-badge">CREATOR</div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card"><span>إجمالي البثوث</span><strong id="totalStreams">0</strong></div>
+                <div class="stat-card"><span>البث الحالي</span><strong id="liveStatus">غير مباشر</strong></div>
+                <div class="stat-card"><span>المشاهدون الآن</span><strong id="currentViewers">0</strong></div>
+                <div class="stat-card"><span>آخر بث</span><strong id="lastStream">—</strong></div>
+            </div>
+
+            <section class="panel">
+                <div class="section-head">
+                    <div>
+                        <h2>🎥 إدارة البث</h2>
+                        <p>أنشئ بيانات البث ثم ابدأه. خدمة الفيديو المباشر نفسها يمكن ربطها لاحقاً بمزود Streaming.</p>
+                    </div>
+                    <span id="liveBadge" class="badge offline">OFFLINE</span>
+                </div>
+
+                <form id="streamForm">
+                    <div class="form-grid">
+                        <label>
+                            عنوان البث
+                            <input id="title" maxlength="120" required placeholder="مثال: Minecraft Survival 🔥">
+                        </label>
+
+                        <label>
+                            التصنيف
+                            <select id="category" required>
+                                <option value="gaming">🎮 Gaming</option>
+                                <option value="just_chatting">💬 Just Chatting</option>
+                                <option value="education">📚 Education</option>
+                                <option value="other">⭐ Other</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <label>
+                        وصف البث
+                        <textarea id="description" maxlength="1000" placeholder="اكتب وصفاً قصيراً للبث..."></textarea>
+                    </label>
+
+                    <label>
+                        صورة البث Thumbnail URL
+                        <input id="thumbnailUrl" type="url" placeholder="https://...">
+                    </label>
+
+                    <div class="actions">
+                        <button id="startButton" class="primary" type="submit">🔴 بدء البث</button>
+                        <button id="endButton" class="danger" type="button" disabled>⏹ إنهاء البث</button>
+                    </div>
+
+                    <div id="message" class="message"></div>
+                </form>
+            </section>
+
+            <section class="panel">
+                <div class="section-head">
+                    <div>
+                        <h2>📺 بثي الحالي</h2>
+                        <p>بيانات البث النشط حالياً.</p>
+                    </div>
+                </div>
+                <div id="currentStream" class="current-stream empty">لا يوجد بث مباشر حالياً.</div>
+            </section>
+
+            <section class="panel">
+                <div class="section-head">
+                    <div>
+                        <h2>🗂️ البثوث السابقة</h2>
+                        <p>آخر البثوث المسجلة في حسابك.</p>
+                    </div>
+                    <button id="refreshButton" class="secondary" type="button">تحديث</button>
+                </div>
+                <div id="history" class="history"></div>
+            </section>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./supabase.js"></script>
+    <script src="./creator-dashboard.js"></script>
+</body>
+</html>
