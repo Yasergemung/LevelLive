@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>إنشاء حساب - YaserStream</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+
+    <div class="auth-container">
+
+        <div class="auth-box">
+
+            <h1>Yaser<span>Stream</span></h1>
+
+            <h2>إنشاء حساب</h2>
+
+            <p class="auth-description">
+                أنشئ حسابك لمشاهدة البثوث ومتابعة صناع المحتوى.
+            </p>
+
+            <form id="registerForm">
+
+                <label>اسم المستخدم</label>
+
+                <input
+                    type="text"
+                    id="username"
+                    placeholder="مثال: YaserGaming"
+                    required
+                >
+
+                <label>الاسم الظاهر</label>
+
+                <input
+                    type="text"
+                    id="displayName"
+                    placeholder="اسمك"
+                    required
+                >
+
+                <label>البريد الإلكتروني</label>
+
+                <input
+                    type="email"
+                    id="email"
+                    placeholder="example@email.com"
+                    required
+                >
+
+                <label>كلمة المرور</label>
+
+                <input
+                    type="password"
+                    id="password"
+                    placeholder="********"
+                    minlength="6"
+                    required
+                >
+
+                <button type="submit">
+                    إنشاء الحساب
+                </button>
+
+            </form>
+
+            <p id="message"></p>
+
+            <p class="auth-footer">
+                لديك حساب بالفعل؟
+                <a href="login.html">تسجيل الدخول</a>
+            </p>
+
+        </div>
+
+    </div>
+
+    <script src="supabase.js"></script>
+    <script src="register.js"></script>
+
+</body>
+</html>
