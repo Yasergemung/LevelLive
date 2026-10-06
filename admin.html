@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Admin - YaserStream</title>
+
+    <link rel="stylesheet" href="./style.css">
+
+</head>
+
+<body>
+
+    <div class="admin-page">
+
+        <header class="admin-header">
+
+            <a href="./index.html"
+               class="logo">
+
+                <span class="logo-icon">
+                    YS
+                </span>
+
+                <span class="logo-text">
+                    Yaser<span>Stream</span>
+                </span>
+
+            </a>
+
+            <div>
+
+                <span class="admin-badge">
+                    🛡️ ADMIN
+                </span>
+
+                <button
+                    id="logoutAdmin"
+                    class="logout-button"
+                >
+                    تسجيل الخروج
+                </button>
+
+            </div>
+
+        </header>
+
+
+        <main class="admin-container">
+
+            <div class="admin-title">
+
+                <div>
+
+                    <span class="section-label">
+                        CONTROL PANEL
+                    </span>
+
+                    <h1>
+                        لوحة تحكم YaserStream
+                    </h1>
+
+                    <p>
+                        إدارة طلبات صناع المحتوى.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="admin-stats">
+
+                <div class="admin-stat-card">
+
+                    <span>📋</span>
+
+                    <div>
+
+                        <strong id="pendingCount">
+                            0
+                        </strong>
+
+                        <small>
+                            طلبات معلقة
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <div class="admin-stat-card">
+
+                    <span>🎥</span>
+
+                    <div>
+
+                        <strong id="approvedCount">
+                            0
+                        </strong>
+
+                        <small>
+                            طلبات مقبولة
+                        </small>
+
+                    </div>
+
+                </div>
+
+
+                <div class="admin-stat-card">
+
+                    <span>❌</span>
+
+                    <div>
+
+                        <strong id="rejectedCount">
+                            0
+                        </strong>
+
+                        <small>
+                            طلبات مرفوضة
+                        </small>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <section class="applications-section">
+
+                <div class="applications-header">
+
+                    <div>
+
+                        <h2>
+                            طلبات صناع المحتوى
+                        </h2>
+
+                        <p>
+                            راجع الطلبات واتخذ القرار المناسب.
+                        </p>
+
+                    </div>
+
+                    <button
+                        id="refreshApplications"
+                        class="refresh-button"
+                    >
+                        ↻ تحديث
+                    </button>
+
+                </div>
+
+
+                <div id="applicationsContainer">
+
+                    <div class="loading-box">
+                        جاري تحميل الطلبات...
+                    </div>
+
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script src="./supabase.js"></script>
+
+    <script src="./admin.js"></script>
+
+</body>
+
+</html>
