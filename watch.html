@@ -13,7 +13,7 @@
 
 <header>
 
-    <a href="./index.html">
+    <a href="./index.html" class="logo">
         LevelLive
     </a>
 
@@ -33,23 +33,25 @@
 <main>
 
     <!-- ========================= -->
-    <!-- VIDEO -->
+    <!-- VIDEO PLAYER -->
     <!-- ========================= -->
 
-    <section>
+    <section class="watch-section">
 
-        <div id="player">
+        <div id="player" class="player">
 
-            <div>
+            <div class="player-content">
 
-                <b>▶</b>
+                <div class="player-icon">
+                    ▶
+                </div>
 
                 <h2 id="playerTitle">
                     جاري تحميل البث...
                 </h2>
 
-                <p>
-                    سيتم ربط الفيديو الحقيقي بخادم البث.
+                <p id="playerStatus">
+                    جارٍ الاتصال بالبث المباشر
                 </p>
 
             </div>
@@ -57,50 +59,62 @@
         </div>
 
 
+        <!-- ========================= -->
         <!-- STREAM INFO -->
+        <!-- ========================= -->
 
         <div class="info">
 
-            <div>
+            <div class="info-content">
 
-                <span id="liveBadge">
-                    OFFLINE
-                </span>
+                <div class="stream-status">
 
-                <span id="viewerCount">
-                    0 مشاهد
-                </span>
+                    <span id="liveBadge" class="offline">
+                        OFFLINE
+                    </span>
+
+                    <span id="viewerCount">
+                        0 مشاهد
+                    </span>
+
+                    <span id="streamCategory">
+                        Gaming
+                    </span>
+
+                </div>
 
 
                 <h1 id="streamTitle">
-                    —
+                    جاري تحميل البث...
                 </h1>
 
 
                 <p id="description">
-                    —
+                    جاري تحميل وصف البث...
                 </p>
 
             </div>
 
 
-            <button id="follow">
+            <button id="follow" type="button">
                 ♡ متابعة
             </button>
 
         </div>
 
 
+        <!-- ========================= -->
         <!-- CREATOR -->
+        <!-- ========================= -->
 
         <div class="creator">
 
-            <div id="avatar">
+            <div id="avatar" class="creator-avatar">
                 L
             </div>
 
 
-            <div>
+            <div class="creator-info">
 
                 <h3 id="creatorName">
                     Creator
@@ -123,10 +137,10 @@
 
 
     <!-- ========================= -->
-    <!-- CHAT -->
+    <!-- LIVE CHAT -->
     <!-- ========================= -->
 
-    <aside>
+    <aside class="chat">
 
         <div class="chathead">
 
@@ -135,13 +149,13 @@
             </b>
 
             <span>
-                متصل
+                ● متصل
             </span>
 
         </div>
 
 
-        <div id="messages">
+        <div id="messages" class="messages">
 
             <div class="system">
                 مرحبًا بك في LevelLive 👋
@@ -154,12 +168,13 @@
 
             <input
                 id="message"
+                type="text"
                 maxlength="300"
                 placeholder="اكتب رسالة..."
                 autocomplete="off"
             >
 
-            <button>
+            <button type="submit">
                 إرسال
             </button>
 
@@ -174,6 +189,10 @@
 
 </main>
 
+
+<!-- ========================= -->
+<!-- SUPABASE -->
+<!-- ========================= -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
