@@ -1,17 +1,16 @@
 function openLogin() {
-    alert("صفحة تسجيل الدخول سنبنيها في الخطوة القادمة.");
+    window.location.href = "login.html";
 }
 
 function openRegister() {
-    alert("صفحة إنشاء الحساب سنبنيها في الخطوة القادمة.");
+    window.location.href = "register.html";
 }
 
 function openCreatorApplication() {
-    alert("طلب الانضمام كصانع محتوى سنبنيه في الخطوة القادمة.");
+    window.location.href = "creator-application.html";
 }
 
 function searchCreator() {
-
     const search = document
         .getElementById("searchInput")
         .value
