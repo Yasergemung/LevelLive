@@ -1,731 +1,808 @@
-let session = null;
+// ==========================================
+// LEVELLIVE - WATCH PAGE
+// ==========================================
+
 let currentStream = null;
-let following = false;
-let channel = null;
+let currentUser = null;
+let currentProfile = null;
+let chatChannel = null;
 
 
-// ========================================
-// START
-// ========================================
+// ==========================================
+// INITIALIZE
+// ==========================================
 
-document.addEventListener(
-    "DOMContentLoaded",
-    init
-);
+document.addEventListener("DOMContentLoaded", async () => {
+    await initializeWatchPage();
+});
 
 
-async function init() {
+// ==========================================
+// INITIALIZE WATCH PAGE
+// ==========================================
 
+async function initializeWatchPage() {
     try {
-
-        const streamId =
-            new URLSearchParams(
-                window.location.search
-            ).get("stream");
-
+        const streamId = getStreamId();
 
         if (!streamId) {
-
-            showError(
-                "لم يتم تحديد بث."
-            );
-
+            showError("لم يتم تحديد البث.");
             return;
         }
 
-
+        // الحصول على المستخدم الحالي
         const {
-            data
-        } =
-            await window.supabaseClient
-                .auth
-                .getSession();
+            data: { session }
+        } = await supabaseClient.auth.getSession();
 
+        currentUser = session?.user || null;
 
-        session =
-            data.session;
+        // تحميل البث
+        await loadStream(streamId);
 
+        // تحميل بيانات المستخدم
+        if (currentUser) {
+            await loadCurrentProfile();
+        }
 
-        await loadStream(
-            streamId
-        );
+        // تحميل الشات
+        await loadChat(streamId);
 
+        // تشغيل Realtime
+        subscribeToChat(streamId);
 
-        await setupFollow();
+        // إعداد زر المتابعة
+        setupFollowButton();
 
-
-        setupChat();
-
+        // إعداد إرسال الرسائل
+        setupChatForm();
 
     } catch (error) {
-
-        console.error(error);
-
-        showError(
-            "حدث خطأ: " +
-            error.message
-        );
-
+        console.error("Watch page error:", error);
+        showError("حدث خطأ أثناء تحميل البث.");
     }
-
 }
 
 
-// ========================================
+// ==========================================
+// GET STREAM ID
+// ==========================================
+
+function getStreamId() {
+    const params = new URLSearchParams(window.location.search);
+
+    return params.get("id");
+}
+
+
+// ==========================================
 // LOAD STREAM
-// ========================================
+// ==========================================
 
-async function loadStream(
-    streamId
-) {
+async function loadStream(streamId) {
 
     const {
         data,
         error
-    } =
-        await window.supabaseClient
-
-            .from("streams")
-
-            .select(`
-                id,
-                creator_id,
-                title,
-                description,
-                category,
-                thumbnail_url,
-                is_live,
-                viewer_count,
-                started_at,
-
-                profiles!streams_creator_id_fkey (
-                    username,
-                    display_name,
-                    avatar_url
-                )
-            `)
-
-            .eq(
-                "id",
-                streamId
+    } = await supabaseClient
+        .from("streams")
+        .select(`
+            *,
+            profiles!streams_creator_id_fkey (
+                username,
+                display_name,
+                avatar_url
             )
+        `)
+        .eq("id", streamId)
+        .single();
 
-            .single();
+    if (error) {
+        console.error("Stream error:", error);
+        showError("البث غير موجود.");
+        return;
+    }
 
+    if (!data) {
+        showError("البث غير موجود.");
+        return;
+    }
 
-    if (error)
-        throw error;
+    currentStream = data;
 
-
-    if (!data)
-        throw new Error(
-            "البث غير موجود."
-        );
-
-
-    currentStream =
-        data;
-
-
-    renderStream();
-
+    renderStream(data);
 }
 
 
-// ========================================
+// ==========================================
 // RENDER STREAM
-// ========================================
+// ==========================================
 
-function renderStream() {
+function renderStream(stream) {
 
-    const profile =
-        currentStream.profiles || {};
+    const creator = stream.profiles;
 
+    const titleElement =
+        document.getElementById("streamTitle");
 
-    const creatorName =
-        profile.display_name ||
-        profile.username ||
-        "Creator";
+    const descriptionElement =
+        document.getElementById("streamDescription");
 
+    const viewerElement =
+        document.getElementById("viewerCount");
 
-    document.title =
-        currentStream.title +
-        " | LevelLive";
+    const creatorNameElement =
+        document.getElementById("creatorName");
 
+    const categoryElement =
+        document.getElementById("streamCategory");
 
-    document.getElementById(
-        "streamTitle"
-    ).textContent =
-        currentStream.title;
+    const creatorAvatarElement =
+        document.getElementById("creatorAvatar");
 
-
-    document.getElementById(
-        "playerTitle"
-    ).textContent =
-        currentStream.is_live
-            ? currentStream.title
-            : "هذا البث انتهى";
-
-
-    document.getElementById(
-        "description"
-    ).textContent =
-        currentStream.description ||
-        "لا يوجد وصف لهذا البث.";
-
-
-    document.getElementById(
-        "viewerCount"
-    ).textContent =
-        Number(
-            currentStream.viewer_count || 0
-        ) +
-        " مشاهد";
-
-
-    const badge =
-        document.getElementById(
-            "liveBadge"
-        );
-
-
-    badge.textContent =
-        currentStream.is_live
-            ? "LIVE"
-            : "OFFLINE";
-
-
-    badge.className =
-        currentStream.is_live
-            ? "live"
-            : "offline";
-
-
-    document.getElementById(
-        "creatorName"
-    ).textContent =
-        creatorName;
-
-
-    document.getElementById(
-        "username"
-    ).textContent =
-        "@" +
-        (
-            profile.username ||
-            "creator"
-        );
-
-
-    const avatar =
-        document.getElementById(
-            "avatar"
-        );
-
-
-    if (profile.avatar_url) {
-
-        avatar.innerHTML = `
-            <img
-                src="${escapeHTML(
-                    profile.avatar_url
-                )}"
-                alt=""
-            >
-        `;
-
-    } else {
-
-        avatar.textContent =
-            creatorName
-                .charAt(0)
-                .toUpperCase();
-
+    if (titleElement) {
+        titleElement.textContent =
+            stream.title || "بث مباشر";
     }
 
-}
-
-
-// ========================================
-// FOLLOW
-// ========================================
-
-async function setupFollow() {
-
-    const button =
-        document.getElementById(
-            "follow"
-        );
-
-
-    if (!session) {
-
-        button.onclick = () => {
-
-            window.location.href =
-                "./login.html";
-
-        };
-
-        return;
+    if (descriptionElement) {
+        descriptionElement.textContent =
+            stream.description || "";
     }
 
-
-    if (
-        session.user.id ===
-        currentStream.creator_id
-    ) {
-
-        button.style.display =
-            "none";
-
-        return;
+    if (viewerElement) {
+        viewerElement.textContent =
+            `${stream.viewer_count || 0} مشاهد`;
     }
 
+    if (creatorNameElement) {
+        creatorNameElement.textContent =
+            creator?.display_name ||
+            creator?.username ||
+            "صانع محتوى";
+    }
 
-    const {
-        data,
-        error
-    } =
-        await window.supabaseClient
+    if (categoryElement) {
+        categoryElement.textContent =
+            stream.category || "Gaming";
+    }
 
-            .from("follows")
+    if (creatorAvatarElement) {
 
-            .select(
-                "follower_id"
-            )
+        if (creator?.avatar_url) {
 
-            .eq(
-                "follower_id",
-                session.user.id
-            )
-
-            .eq(
-                "creator_id",
-                currentStream.creator_id
-            )
-
-            .maybeSingle();
-
-
-    if (error)
-        console.error(error);
-
-
-    following =
-        !!data;
-
-
-    updateFollowButton();
-
-
-    button.onclick =
-        toggleFollow;
-
-}
-
-
-// ========================================
-// TOGGLE FOLLOW
-// ========================================
-
-async function toggleFollow() {
-
-    const button =
-        document.getElementById(
-            "follow"
-        );
-
-
-    button.disabled =
-        true;
-
-
-    try {
-
-        if (following) {
-
-            const {
-                error
-            } =
-                await window.supabaseClient
-
-                    .from("follows")
-
-                    .delete()
-
-                    .eq(
-                        "follower_id",
-                        session.user.id
-                    )
-
-                    .eq(
-                        "creator_id",
-                        currentStream.creator_id
-                    );
-
-
-            if (error)
-                throw error;
-
-
-            following = false;
-
+            creatorAvatarElement.innerHTML = `
+                <img
+                    src="${escapeHTML(creator.avatar_url)}"
+                    alt="Avatar"
+                >
+            `;
 
         } else {
 
-            const {
-                error
-            } =
-                await window.supabaseClient
+            const firstLetter =
+                (
+                    creator?.display_name ||
+                    creator?.username ||
+                    "U"
+                ).charAt(0).toUpperCase();
 
-                    .from("follows")
-
-                    .insert({
-                        follower_id:
-                            session.user.id,
-
-                        creator_id:
-                            currentStream.creator_id
-                    });
-
-
-            if (error)
-                throw error;
-
-
-            following = true;
-
+            creatorAvatarElement.textContent =
+                firstLetter;
         }
-
-
-        updateFollowButton();
-
-
-    } catch (error) {
-
-        console.error(error);
-
-        alert(
-            "تعذر تحديث المتابعة: " +
-            error.message
-        );
-
     }
-
-
-    button.disabled =
-        false;
-
 }
 
 
-// ========================================
-// FOLLOW BUTTON
-// ========================================
+// ==========================================
+// LOAD CURRENT PROFILE
+// ==========================================
 
-function updateFollowButton() {
+async function loadCurrentProfile() {
 
-    const button =
-        document.getElementById(
-            "follow"
-        );
+    const {
+        data,
+        error
+    } = await supabaseClient
+        .from("profiles")
+        .select(`
+            username,
+            display_name,
+            avatar_url
+        `)
+        .eq("id", currentUser.id)
+        .single();
 
-
-    button.textContent =
-        following
-            ? "✓ متابَع"
-            : "♡ متابعة";
-
-
-    button.classList.toggle(
-        "following",
-        following
-    );
-
-}
-
-
-// ========================================
-// CHAT
-// ========================================
-
-function setupChat() {
-
-    const form =
-        document.getElementById(
-            "chat"
-        );
-
-
-    const input =
-        document.getElementById(
-            "message"
-        );
-
-
-    if (!session) {
-
-        input.disabled =
-            true;
-
-
-        input.placeholder =
-            "سجّل الدخول للدردشة";
-
-
-        document.getElementById(
-            "loginHint"
-        ).hidden =
-            false;
-
-
+    if (error) {
+        console.error("Profile error:", error);
         return;
-
     }
 
-
-    form.addEventListener(
-        "submit",
-        async (event) => {
-
-            event.preventDefault();
-
-
-            const message =
-                input.value.trim();
-
-
-            if (!message)
-                return;
-
-
-            /*
-                سيتم تخزين الرسائل
-                في جدول stream_chat
-                بعد إنشاء نظام الشات
-            */
-
-
-            addMessage(
-                session.user
-                    .user_metadata
-                    ?.display_name ||
-                session.user.email
-                    ?.split("@")[0] ||
-                "User",
-
-                message
-            );
-
-
-            input.value = "";
-
-        }
-    );
-
-
-    subscribeToChat();
-
+    currentProfile = data;
 }
 
 
-// ========================================
-// REALTIME CHAT
-// ========================================
+// ==========================================
+// LOAD CHAT HISTORY
+// ==========================================
 
-function subscribeToChat() {
+async function loadChat(streamId) {
 
-    channel =
-        window.supabaseClient
-
-            .channel(
-                "chat-" +
-                currentStream.id
+    const {
+        data,
+        error
+    } = await supabaseClient
+        .from("stream_chat")
+        .select(`
+            id,
+            user_id,
+            message,
+            created_at,
+            profiles!stream_chat_user_id_fkey (
+                username,
+                display_name,
+                avatar_url
             )
+        `)
+        .eq("stream_id", streamId)
+        .order("created_at", {
+            ascending: true
+        })
+        .limit(100);
+
+    if (error) {
+        console.error("Chat loading error:", error);
+        return;
+    }
+
+    const chatContainer =
+        document.getElementById("chatMessages");
+
+    if (!chatContainer) return;
+
+    chatContainer.innerHTML = "";
+
+    data.forEach(message => {
+        addMessageToChat(message);
+    });
+
+    scrollChatToBottom();
+}
+
+
+// ==========================================
+// REALTIME CHAT
+// ==========================================
+
+function subscribeToChat(streamId) {
+
+    if (chatChannel) {
+        supabaseClient
+            .removeChannel(chatChannel);
+    }
+
+    chatChannel =
+        supabaseClient
+            .channel(`stream-chat-${streamId}`)
 
             .on(
                 "postgres_changes",
                 {
                     event: "INSERT",
-
                     schema: "public",
-
                     table: "stream_chat",
-
-                    filter:
-                        "stream_id=eq." +
-                        currentStream.id
+                    filter: `stream_id=eq.${streamId}`
                 },
 
-                payload => {
+                async (payload) => {
 
-                    addMessage(
+                    console.log(
+                        "New chat message:",
                         payload.new
-                            .display_name ||
-                        "User",
-
-                        payload.new
-                            .message
                     );
 
+                    const message =
+                        payload.new;
+
+                    // الحصول على بيانات صاحب الرسالة
+                    const {
+                        data: profile
+                    } = await supabaseClient
+                        .from("profiles")
+                        .select(`
+                            username,
+                            display_name,
+                            avatar_url
+                        `)
+                        .eq("id", message.user_id)
+                        .single();
+
+                    addMessageToChat({
+                        ...message,
+                        profiles: profile
+                    });
+
+                    scrollChatToBottom();
                 }
             )
 
-            .subscribe();
+            .subscribe((status) => {
 
+                console.log(
+                    "Chat realtime status:",
+                    status
+                );
+
+            });
 }
 
 
-// ========================================
+// ==========================================
+// SETUP CHAT FORM
+// ==========================================
+
+function setupChatForm() {
+
+    const chatForm =
+        document.getElementById("chatForm");
+
+    const chatInput =
+        document.getElementById("chatInput");
+
+    if (!chatForm || !chatInput) {
+        console.warn(
+            "Chat form elements not found."
+        );
+
+        return;
+    }
+
+    chatForm.addEventListener(
+        "submit",
+        async (event) => {
+
+            event.preventDefault();
+
+            const message =
+                chatInput.value.trim();
+
+            if (!message) return;
+
+            if (message.length > 300) {
+
+                alert(
+                    "الرسالة يجب ألا تتجاوز 300 حرف."
+                );
+
+                return;
+            }
+
+            if (!currentUser) {
+
+                alert(
+                    "يجب تسجيل الدخول لإرسال رسالة."
+                );
+
+                window.location.href =
+                    "./login.html";
+
+                return;
+            }
+
+            if (!currentStream) return;
+
+            chatInput.disabled = true;
+
+            try {
+
+                const {
+                    error
+                } = await supabaseClient
+                    .from("stream_chat")
+                    .insert({
+
+                        stream_id:
+                            currentStream.id,
+
+                        user_id:
+                            currentUser.id,
+
+                        message:
+                            message
+                    });
+
+                if (error) {
+                    throw error;
+                }
+
+                chatInput.value = "";
+
+            } catch (error) {
+
+                console.error(
+                    "Send chat error:",
+                    error
+                );
+
+                alert(
+                    "حدث خطأ أثناء إرسال الرسالة."
+                );
+
+            } finally {
+
+                chatInput.disabled = false;
+
+                chatInput.focus();
+            }
+        }
+    );
+}
+
+
+// ==========================================
 // ADD MESSAGE
-// ========================================
+// ==========================================
 
-function addMessage(
-    username,
-    message
-) {
+function addMessageToChat(message) {
 
-    const messages =
-        document.getElementById(
-            "messages"
-        );
+    const chatContainer =
+        document.getElementById("chatMessages");
 
+    if (!chatContainer) return;
 
-    const item =
-        document.createElement(
-            "div"
-        );
+    // منع ظهور نفس الرسالة مرتين
+    if (
+        document.querySelector(
+            `[data-message-id="${message.id}"]`
+        )
+    ) {
+        return;
+    }
 
+    const profile =
+        message.profiles || {};
 
-    item.className =
-        "msg";
+    const displayName =
+        profile.display_name ||
+        profile.username ||
+        "مستخدم";
 
+    const avatar =
+        profile.avatar_url;
 
-    const name =
-        document.createElement(
-            "strong"
-        );
+    const messageElement =
+        document.createElement("div");
 
+    messageElement.className =
+        "chat-message";
 
-    name.textContent =
-        username + ":";
+    messageElement.dataset.messageId =
+        message.id;
 
+    let avatarHTML;
 
-    const text =
-        document.createElement(
-            "span"
-        );
+    if (avatar) {
 
+        avatarHTML = `
+            <img
+                src="${escapeHTML(avatar)}"
+                class="chat-avatar"
+                alt="Avatar"
+            >
+        `;
 
-    text.textContent =
-        " " + message;
+    } else {
 
+        avatarHTML = `
+            <div class="chat-avatar-placeholder">
+                ${escapeHTML(
+                    displayName.charAt(0).toUpperCase()
+                )}
+            </div>
+        `;
+    }
 
-    item.append(
-        name,
-        text
-    );
+    messageElement.innerHTML = `
+        ${avatarHTML}
 
+        <div class="chat-message-content">
 
-    messages.appendChild(
-        item
-    );
+            <div class="chat-message-header">
 
+                <strong>
+                    ${escapeHTML(displayName)}
+                </strong>
 
-    messages.scrollTop =
-        messages.scrollHeight;
-
-}
-
-
-// ========================================
-// ERROR
-// ========================================
-
-function showError(
-    message
-) {
-
-    document.querySelector(
-        "main"
-    ).innerHTML = `
-
-        <div id="player">
-
-            <div>
-
-                <h2>
-                    ${escapeHTML(
-                        message
-                    )}
-                </h2>
+                <span>
+                    ${formatTime(message.created_at)}
+                </span>
 
             </div>
 
-        </div>
+            <div class="chat-message-text">
+                ${escapeHTML(message.message)}
+            </div>
 
+        </div>
     `;
 
+    chatContainer.appendChild(
+        messageElement
+    );
 }
 
 
-// ========================================
-// ESCAPE HTML
-// ========================================
+// ==========================================
+// FOLLOW CREATOR
+// ==========================================
 
-function escapeHTML(
-    text
-) {
+function setupFollowButton() {
 
-    return String(
-        text ?? ""
-    )
+    const followButton =
+        document.getElementById("followButton");
 
-        .replace(
-            /&/g,
-            "&amp;"
-        )
+    if (!followButton) return;
 
-        .replace(
-            /</g,
-            "&lt;"
-        )
+    followButton.addEventListener(
+        "click",
+        async () => {
 
-        .replace(
-            />/g,
-            "&gt;"
-        )
+            if (!currentUser) {
 
-        .replace(
-            /"/g,
-            "&quot;"
-        )
-
-        .replace(
-            /'/g,
-            "&#039;"
-        );
-
-}
-
-
-// ========================================
-// CLEANUP
-// ========================================
-
-window.addEventListener(
-    "beforeunload",
-    () => {
-
-        if (channel) {
-
-            window.supabaseClient
-                .removeChannel(
-                    channel
+                alert(
+                    "يجب تسجيل الدخول لمتابعة صانع المحتوى."
                 );
 
-        }
+                window.location.href =
+                    "./login.html";
 
+                return;
+            }
+
+            if (!currentStream) return;
+
+            const creatorId =
+                currentStream.creator_id;
+
+            if (creatorId === currentUser.id) {
+
+                alert(
+                    "لا يمكنك متابعة نفسك."
+                );
+
+                return;
+            }
+
+            try {
+
+                const {
+                    data: existingFollow,
+                    error: checkError
+                } = await supabaseClient
+                    .from("follows")
+                    .select("creator_id")
+                    .eq(
+                        "follower_id",
+                        currentUser.id
+                    )
+                    .eq(
+                        "creator_id",
+                        creatorId
+                    )
+                    .maybeSingle();
+
+                if (checkError)
+                    throw checkError;
+
+                if (existingFollow) {
+
+                    const {
+                        error
+                    } = await supabaseClient
+                        .from("follows")
+                        .delete()
+                        .eq(
+                            "follower_id",
+                            currentUser.id
+                        )
+                        .eq(
+                            "creator_id",
+                            creatorId
+                        );
+
+                    if (error)
+                        throw error;
+
+                    followButton.textContent =
+                        "متابعة";
+
+                    followButton.classList.remove(
+                        "following"
+                    );
+
+                } else {
+
+                    const {
+                        error
+                    } = await supabaseClient
+                        .from("follows")
+                        .insert({
+
+                            follower_id:
+                                currentUser.id,
+
+                            creator_id:
+                                creatorId
+                        });
+
+                    if (error)
+                        throw error;
+
+                    followButton.textContent =
+                        "✓ تتابعه";
+
+                    followButton.classList.add(
+                        "following"
+                    );
+                }
+
+            } catch (error) {
+
+                console.error(
+                    "Follow error:",
+                    error
+                );
+
+                alert(
+                    "حدث خطأ أثناء تحديث المتابعة."
+                );
+            }
+        }
+    );
+
+    checkFollowStatus();
+}
+
+
+// ==========================================
+// CHECK FOLLOW STATUS
+// ==========================================
+
+async function checkFollowStatus() {
+
+    if (
+        !currentUser ||
+        !currentStream
+    ) return;
+
+    const followButton =
+        document.getElementById("followButton");
+
+    if (!followButton) return;
+
+    const {
+        data,
+        error
+    } = await supabaseClient
+        .from("follows")
+        .select("creator_id")
+        .eq(
+            "follower_id",
+            currentUser.id
+        )
+        .eq(
+            "creator_id",
+            currentStream.creator_id
+        )
+        .maybeSingle();
+
+    if (error) {
+        console.error(
+            "Follow check error:",
+            error
+        );
+
+        return;
     }
-);
+
+    if (data) {
+
+        followButton.textContent =
+            "✓ تتابعه";
+
+        followButton.classList.add(
+            "following"
+        );
+
+    } else {
+
+        followButton.textContent =
+            "متابعة";
+
+        followButton.classList.remove(
+            "following"
+        );
+    }
+}
+
+
+// ==========================================
+// CHAT SCROLL
+// ==========================================
+
+function scrollChatToBottom() {
+
+    const chatContainer =
+        document.getElementById("chatMessages");
+
+    if (!chatContainer) return;
+
+    chatContainer.scrollTop =
+        chatContainer.scrollHeight;
+}
+
+
+// ==========================================
+// TIME
+// ==========================================
+
+function formatTime(dateString) {
+
+    if (!dateString)
+        return "";
+
+    const date =
+        new Date(dateString);
+
+    return date.toLocaleTimeString(
+        "ar-EG",
+        {
+            hour: "2-digit",
+            minute: "2-digit"
+        }
+    );
+}
+
+
+// ==========================================
+// ERROR
+// ==========================================
+
+function showError(message) {
+
+    const container =
+        document.getElementById("watchContainer");
+
+    if (container) {
+
+        container.innerHTML = `
+            <div class="watch-error">
+                <h2>⚠️</h2>
+                <p>${escapeHTML(message)}</p>
+
+                <a href="./index.html">
+                    العودة للرئيسية
+                </a>
+            </div>
+        `;
+
+    } else {
+
+        alert(message);
+    }
+}
+
+
+// ==========================================
+// SECURITY
+// ==========================================
+
+function escapeHTML(text) {
+
+    return String(text ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
