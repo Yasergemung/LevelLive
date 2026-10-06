@@ -5,23 +5,35 @@ registerForm.addEventListener("submit", async (event) => {
 
     event.preventDefault();
 
-    const username =
-        document.getElementById("username").value.trim();
+    const username = document
+        .getElementById("username")
+        .value
+        .trim();
 
-    const displayName =
-        document.getElementById("displayName").value.trim();
+    const displayName = document
+        .getElementById("displayName")
+        .value
+        .trim();
 
-    const email =
-        document.getElementById("email").value.trim();
+    const email = document
+        .getElementById("email")
+        .value
+        .trim();
 
-    const password =
-        document.getElementById("password").value;
+    const password = document
+        .getElementById("password")
+        .value;
+
+    if (!username || !displayName || !email || !password) {
+        message.textContent = "من فضلك املأ جميع البيانات.";
+        return;
+    }
 
     message.textContent = "جاري إنشاء الحساب...";
 
     try {
 
-        // إنشاء حساب Authentication
+        // إنشاء حساب Supabase Auth
         const { data, error } =
             await supabaseClient.auth.signUp({
                 email: email,
@@ -33,10 +45,10 @@ registerForm.addEventListener("submit", async (event) => {
         }
 
         if (!data.user) {
-            throw new Error("لم يتم إنشاء المستخدم.");
+            throw new Error("لم يتم إنشاء الحساب.");
         }
 
-        // إنشاء Profile
+        // إنشاء Profile للمستخدم
         const { error: profileError } =
             await supabaseClient
                 .from("profiles")
@@ -53,9 +65,13 @@ registerForm.addEventListener("submit", async (event) => {
         }
 
         message.textContent =
-            "تم إنشاء الحساب بنجاح! يمكنك الآن تسجيل الدخول.";
+            "تم إنشاء الحساب بنجاح! 🎉";
 
         registerForm.reset();
+
+        setTimeout(() => {
+            window.location.href = "login.html";
+        }, 1500);
 
     } catch (error) {
 
@@ -64,4 +80,5 @@ registerForm.addEventListener("submit", async (event) => {
         message.textContent =
             "حدث خطأ: " + error.message;
     }
+
 });
