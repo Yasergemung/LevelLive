@@ -38,9 +38,14 @@ async function checkAdmin() {
     try {
 
         const {
-            data: { session }
+            data: { session },
+            error: sessionError
         } =
             await window.supabaseClient.auth.getSession();
+
+
+        if (sessionError)
+            throw sessionError;
 
 
         if (!session) {
@@ -52,8 +57,7 @@ async function checkAdmin() {
         }
 
 
-        currentUser =
-            session.user;
+        currentUser = session.user;
 
 
         const {
@@ -71,7 +75,7 @@ async function checkAdmin() {
             throw error;
 
 
-        if (profile.role !== "admin") {
+        if (!profile || profile.role !== "admin") {
 
             alert(
                 "ليس لديك صلاحية دخول لوحة التحكم."
@@ -88,11 +92,17 @@ async function checkAdmin() {
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "Admin check error:",
+            error
+        );
+
+        alert(
+            "حدث خطأ أثناء التحقق من صلاحيات الإدارة."
+        );
 
         window.location.href =
             "./index.html";
-
     }
 }
 
@@ -107,6 +117,10 @@ async function loadApplications() {
         document.getElementById(
             "applicationsContainer"
         );
+
+
+    if (!container)
+        return;
 
 
     container.innerHTML = `
@@ -132,7 +146,7 @@ async function loadApplications() {
                     social_link,
                     status,
                     created_at,
-                    profiles (
+                    profiles!creator_applications_user_id_fkey (
                         username,
                         display_name,
                         avatar_url
@@ -150,18 +164,30 @@ async function loadApplications() {
             throw error;
 
 
-        updateStats(applications);
+        console.log(
+            "Applications loaded:",
+            applications
+        );
 
 
-        if (!applications ||
-            applications.length === 0) {
+        updateStats(
+            applications || []
+        );
+
+
+        if (
+            !applications ||
+            applications.length === 0
+        ) {
 
             container.innerHTML = `
                 <div class="empty-box">
                     <div>📭</div>
+
                     <h3>
                         لا توجد طلبات
                     </h3>
+
                     <p>
                         لم يتم إرسال أي طلبات Creator حتى الآن.
                     </p>
@@ -184,11 +210,26 @@ async function loadApplications() {
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "Load applications error:",
+            error
+        );
+
 
         container.innerHTML = `
             <div class="error-box">
-                حدث خطأ أثناء تحميل الطلبات.
+
+                <h3>
+                    حدث خطأ أثناء تحميل الطلبات
+                </h3>
+
+                <p>
+                    ${escapeHTML(
+                        error.message ||
+                        "خطأ غير معروف"
+                    )}
+                </p>
+
             </div>
         `;
 
@@ -229,7 +270,9 @@ function applicationCard(application) {
     let statusHTML = "";
 
 
-    if (application.status === "pending") {
+    if (
+        application.status === "pending"
+    ) {
 
         statusHTML = `
             <div class="application-actions">
@@ -286,12 +329,14 @@ function applicationCard(application) {
 
                         ${
                             profile.avatar_url
-                            ? `<img
-                                src="${escapeHTML(
-                                    profile.avatar_url
-                                )}"
-                                alt=""
-                            >`
+                            ? `
+                                <img
+                                    src="${escapeHTML(
+                                        profile.avatar_url
+                                    )}"
+                                    alt="Avatar"
+                                >
+                            `
                             : escapeHTML(
                                 displayName
                                     .charAt(0)
@@ -300,6 +345,7 @@ function applicationCard(application) {
                         }
 
                     </div>
+
 
                     <div>
 
@@ -320,7 +366,11 @@ function applicationCard(application) {
                 </div>
 
 
-                <span class="application-status ${application.status}">
+                <span
+                    class="application-status ${escapeHTML(
+                        application.status
+                    )}"
+                >
                     ${getStatusText(
                         application.status
                     )}
@@ -369,7 +419,8 @@ function applicationCard(application) {
 
                 <p>
                     ${escapeHTML(
-                        application.description
+                        application.description ||
+                        "لا يوجد وصف."
                     )}
                 </p>
 
@@ -425,11 +476,14 @@ function attachApplicationEvents() {
                                 button.dataset.id
                             );
 
+
                         const action =
                             button.dataset.action;
 
 
-                        if (action === "approve") {
+                        if (
+                            action === "approve"
+                        ) {
 
                             await reviewApplication(
                                 id,
@@ -455,7 +509,7 @@ function attachApplicationEvents() {
 
 
 // ========================================
-// REVIEW
+// REVIEW APPLICATION
 // ========================================
 
 async function reviewApplication(
@@ -496,7 +550,10 @@ async function reviewApplication(
             throw error;
 
 
-        console.log(data);
+        console.log(
+            "Review result:",
+            data
+        );
 
 
         await loadApplications();
@@ -505,16 +562,20 @@ async function reviewApplication(
         alert(
             approve
                 ? "تم قبول الطلب وتحويل المستخدم إلى Creator ✅"
-                : "تم رفض الطلب."
+                : "تم رفض الطلب ✅"
         );
 
 
     } catch (error) {
 
-        console.error(error);
+        console.error(
+            "Review error:",
+            error
+        );
+
 
         alert(
-            "حدث خطأ: " +
+            "حدث خطأ أثناء مراجعة الطلب:\n" +
             error.message
         );
 
@@ -527,7 +588,9 @@ async function reviewApplication(
 // STATS
 // ========================================
 
-function updateStats(applications) {
+function updateStats(
+    applications
+) {
 
     const pending =
         applications.filter(
@@ -550,32 +613,51 @@ function updateStats(applications) {
         ).length;
 
 
-    document.getElementById(
-        "pendingCount"
-    ).textContent = pending;
+    const pendingElement =
+        document.getElementById(
+            "pendingCount"
+        );
 
 
-    document.getElementById(
-        "approvedCount"
-    ).textContent = approved;
+    const approvedElement =
+        document.getElementById(
+            "approvedCount"
+        );
 
 
-    document.getElementById(
-        "rejectedCount"
-    ).textContent = rejected;
+    const rejectedElement =
+        document.getElementById(
+            "rejectedCount"
+        );
+
+
+    if (pendingElement)
+        pendingElement.textContent =
+            pending;
+
+
+    if (approvedElement)
+        approvedElement.textContent =
+            approved;
+
+
+    if (rejectedElement)
+        rejectedElement.textContent =
+            rejected;
 
 }
 
 
 // ========================================
-// HELPERS
+// CONTENT TYPE
 // ========================================
 
 function getContentType(type) {
 
     const types = {
 
-        gaming: "🎮 Gaming",
+        gaming:
+            "🎮 Gaming",
 
         just_chatting:
             "💬 Just Chatting",
@@ -594,41 +676,63 @@ function getContentType(type) {
 }
 
 
+// ========================================
+// STATUS TEXT
+// ========================================
+
 function getStatusText(status) {
 
-    if (status === "pending")
+    if (
+        status === "pending"
+    )
         return "قيد المراجعة";
 
-    if (status === "approved")
+
+    if (
+        status === "approved"
+    )
         return "مقبول";
 
-    if (status === "rejected")
+
+    if (
+        status === "rejected"
+    )
         return "مرفوض";
+
 
     return status;
 
 }
 
 
+// ========================================
+// ESCAPE HTML
+// ========================================
+
 function escapeHTML(text) {
 
     return String(text)
+
         .replace(
             /&/g,
             "&amp;"
         )
+
         .replace(
             /</g,
             "&lt;"
         )
+
         .replace(
             />/g,
             "&gt;"
         )
+
         .replace(
             /"/g,
             "&quot;"
         )
+
         .replace(
             /'/g,
             "&#039;"
@@ -643,11 +747,34 @@ function escapeHTML(text) {
 
 async function logoutAdmin() {
 
-    await window.supabaseClient
-        .auth
-        .signOut();
+    try {
 
-    window.location.href =
-        "./index.html";
+        const {
+            error
+        } =
+            await window.supabaseClient
+                .auth
+                .signOut();
+
+
+        if (error)
+            throw error;
+
+
+        window.location.href =
+            "./index.html";
+
+    } catch (error) {
+
+        console.error(
+            "Logout error:",
+            error
+        );
+
+        alert(
+            "حدث خطأ أثناء تسجيل الخروج."
+        );
+
+    }
 
 }
