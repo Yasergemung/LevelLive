@@ -1,81 +1,62 @@
-// ========================================
-// YaserStream - Main JavaScript
-// ========================================
+// ==========================================
+// LEVELLIVE - MAIN SCRIPT
+// ==========================================
 
 document.addEventListener("DOMContentLoaded", async () => {
-
     await updateNavbar();
-
+    await loadLiveStreams();
 });
 
 
-// ========================================
-// تحديث الـ Navbar
-// ========================================
+// ==========================================
+// NAVBAR
+// ==========================================
 
 async function updateNavbar() {
 
-    const navButtons = document.querySelector(".nav-buttons");
+    const navButtons =
+        document.querySelector(".nav-buttons");
 
-    if (!navButtons) {
-        return;
-    }
+    if (!navButtons) return;
 
     try {
 
         const {
-            data: {
-                session
-            }
-        } = await window.supabaseClient.auth.getSession();
-
-
-        // ========================================
-        // المستخدم غير مسجل دخول
-        // ========================================
+            data: { session }
+        } =
+            await window.supabaseClient.auth.getSession();
 
         if (!session) {
 
             navButtons.innerHTML = `
-
-                <a
-                    href="./login.html"
-                    class="nav-button"
-                >
+                <a href="./login.html" class="nav-button">
                     تسجيل الدخول
                 </a>
 
-                <a
-                    href="./register.html"
-                    class="nav-button primary"
-                >
+                <a href="./register.html" class="nav-button primary">
                     إنشاء حساب
                 </a>
-
             `;
 
             return;
         }
 
-
-        // ========================================
-        // المستخدم مسجل دخول
-        // ========================================
-
         const user = session.user;
-
-
-        // جلب بيانات المستخدم من profiles
 
         const {
             data: profile,
             error: profileError
-        } = await window.supabaseClient
-            .from("profiles")
-            .select("username, display_name, avatar_url, role")
-            .eq("id", user.id)
-            .single();
-
+        } =
+            await window.supabaseClient
+                .from("profiles")
+                .select(`
+                    username,
+                    display_name,
+                    avatar_url,
+                    role
+                `)
+                .eq("id", user.id)
+                .single();
 
         if (profileError) {
 
@@ -83,11 +64,7 @@ async function updateNavbar() {
                 "Profile error:",
                 profileError
             );
-
         }
-
-
-        // الاسم الظاهر
 
         const displayName =
             profile?.display_name ||
@@ -95,18 +72,11 @@ async function updateNavbar() {
             user.email?.split("@")[0] ||
             "المستخدم";
 
-
-        // Username
-
         const username =
             profile?.username ||
             "user";
 
-
-        // صورة البروفايل
-
         let avatarHTML;
-
 
         if (profile?.avatar_url) {
 
@@ -129,16 +99,9 @@ async function updateNavbar() {
                     )}
                 </div>
             `;
-
         }
 
-
-        // ========================================
-        // عرض البروفايل
-        // ========================================
-
         navButtons.innerHTML = `
-
             <div class="user-profile">
 
                 <a
@@ -162,7 +125,6 @@ async function updateNavbar() {
 
                 </a>
 
-
                 <button
                     class="logout-button"
                     id="logoutButton"
@@ -171,19 +133,12 @@ async function updateNavbar() {
                 </button>
 
             </div>
-
         `;
-
-
-        // ========================================
-        // زر تسجيل الخروج
-        // ========================================
 
         const logoutButton =
             document.getElementById(
                 "logoutButton"
             );
-
 
         if (logoutButton) {
 
@@ -191,9 +146,7 @@ async function updateNavbar() {
                 "click",
                 logoutUser
             );
-
         }
-
 
     } catch (error) {
 
@@ -201,35 +154,27 @@ async function updateNavbar() {
             "Navbar error:",
             error
         );
-
     }
-
 }
 
 
-// ========================================
-// تسجيل الخروج
-// ========================================
+// ==========================================
+// LOGOUT
+// ==========================================
 
 async function logoutUser() {
 
     try {
 
-        const {
-            error
-        } = await window.supabaseClient.auth.signOut();
+        const { error } =
+            await window.supabaseClient
+                .auth
+                .signOut();
 
-
-        if (error) {
-
-            throw error;
-
-        }
-
+        if (error) throw error;
 
         window.location.href =
             "./index.html";
-
 
     } catch (error) {
 
@@ -238,82 +183,372 @@ async function logoutUser() {
         alert(
             "حدث خطأ أثناء تسجيل الخروج."
         );
-
     }
-
 }
 
 
-// ========================================
-// البحث
-// ========================================
+// ==========================================
+// LIVE STREAMS
+// ==========================================
 
-function searchCreator() {
+async function loadLiveStreams() {
+
+    const container =
+        document.getElementById(
+            "liveStreamsGrid"
+        );
+
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="live-loading">
+            جاري تحميل البثوث المباشرة...
+        </div>
+    `;
+
+    try {
+
+        const {
+            data: streams,
+            error
+        } =
+            await window.supabaseClient
+                .from("streams")
+                .select(`
+                    id,
+                    title,
+                    description,
+                    category,
+                    thumbnail_url,
+                    viewer_count,
+                    started_at,
+                    creator_id,
+                    profiles!streams_creator_id_fkey (
+                        username,
+                        display_name,
+                        avatar_url
+                    )
+                `)
+                .eq(
+                    "is_live",
+                    true
+                )
+                .order(
+                    "started_at",
+                    {
+                        ascending: false
+                    }
+                );
+
+        if (error) throw error;
+
+        if (
+            !streams ||
+            streams.length === 0
+        ) {
+
+            container.innerHTML = `
+                <div class="no-live-streams">
+
+                    <div class="empty-icon">
+                        📡
+                    </div>
+
+                    <h3>
+                        لا توجد بثوث مباشرة الآن
+                    </h3>
+
+                    <p>
+                        عندما يبدأ أحد صناع المحتوى بثًا
+                        سيظهر هنا تلقائيًا.
+                    </p>
+
+                </div>
+            `;
+
+            return;
+        }
+
+        container.innerHTML =
+            streams
+                .map(
+                    createLiveStreamCard
+                )
+                .join("");
+
+    } catch (error) {
+
+        console.error(
+            "Live streams error:",
+            error
+        );
+
+        container.innerHTML = `
+            <div class="no-live-streams">
+
+                <div class="empty-icon">
+                    ⚠️
+                </div>
+
+                <h3>
+                    حدث خطأ
+                </h3>
+
+                <p>
+                    لم نتمكن من تحميل البثوث.
+                </p>
+
+            </div>
+        `;
+    }
+}
+
+
+// ==========================================
+// STREAM CARD
+// ==========================================
+
+function createLiveStreamCard(stream) {
+
+    const creator =
+        stream.profiles || {};
+
+    const creatorName =
+        creator.display_name ||
+        creator.username ||
+        "صانع محتوى";
+
+    const thumbnail =
+        stream.thumbnail_url ||
+        "https://placehold.co/640x360/111827/ffffff?text=LEVELLIVE";
+
+    return `
+        <a
+            href="./watch.html?id=${encodeURIComponent(stream.id)}"
+            class="live-stream-card"
+        >
+
+            <div class="stream-thumbnail">
+
+                <img
+                    src="${escapeHTML(thumbnail)}"
+                    alt="${escapeHTML(
+                        stream.title || "Live Stream"
+                    )}"
+                    loading="lazy"
+                >
+
+                <span class="live-badge">
+                    🔴 LIVE
+                </span>
+
+                <span class="stream-viewers">
+                    👁 ${Number(
+                        stream.viewer_count || 0
+                    )}
+                </span>
+
+            </div>
+
+            <div class="stream-card-info">
+
+                <div class="stream-card-avatar">
+
+                    ${
+                        creator.avatar_url
+                        ?
+                        `
+                            <img
+                                src="${escapeHTML(
+                                    creator.avatar_url
+                                )}"
+                                alt=""
+                            >
+                        `
+                        :
+                        `
+                            ${escapeHTML(
+                                creatorName
+                                    .charAt(0)
+                                    .toUpperCase()
+                            )}
+                        `
+                    }
+
+                </div>
+
+                <div class="stream-card-text">
+
+                    <h3>
+                        ${escapeHTML(
+                            stream.title ||
+                            "بث مباشر"
+                        )}
+                    </h3>
+
+                    <p>
+                        ${escapeHTML(
+                            creatorName
+                        )}
+                    </p>
+
+                    <span>
+                        ${escapeHTML(
+                            stream.category ||
+                            "Gaming"
+                        )}
+                    </span>
+
+                </div>
+
+            </div>
+
+        </a>
+    `;
+}
+
+
+// ==========================================
+// SEARCH CREATOR
+// ==========================================
+
+async function searchCreator() {
 
     const searchInput =
         document.getElementById(
             "searchInput"
         );
 
-
-    if (!searchInput) {
-        return;
-    }
-
+    if (!searchInput) return;
 
     const search =
         searchInput.value.trim();
 
-
-    if (search === "") {
+    if (!search) {
 
         alert(
             "اكتب اسم صانع المحتوى."
         );
 
-        return;
+        searchInput.focus();
 
+        return;
     }
 
+    try {
 
-    alert(
-        "البحث عن: " + search
-    );
+        const {
+            data: creators,
+            error
+        } =
+            await window.supabaseClient
+                .from("profiles")
+                .select(`
+                    id,
+                    username,
+                    display_name,
+                    avatar_url,
+                    role,
+                    creator_approved
+                `)
+                .eq(
+                    "role",
+                    "creator"
+                )
+                .eq(
+                    "creator_approved",
+                    true
+                )
+                .or(
+                    `username.ilike.%${search}%,display_name.ilike.%${search}%`
+                )
+                .limit(20);
 
+        if (error) throw error;
+
+        if (
+            !creators ||
+            creators.length === 0
+        ) {
+
+            alert(
+                "لم يتم العثور على صانع محتوى بهذا الاسم."
+            );
+
+            return;
+        }
+
+        const creator =
+            creators[0];
+
+        /*
+         * لو عندك profile.html يدعم ?id=
+         * سيتم فتح صفحة صانع المحتوى.
+         */
+        window.location.href =
+            `./profile.html?id=${encodeURIComponent(
+                creator.id
+            )}`;
+
+    } catch (error) {
+
+        console.error(
+            "Search error:",
+            error
+        );
+
+        alert(
+            "حدث خطأ أثناء البحث."
+        );
+    }
 }
 
 
-// ========================================
-// حماية النصوص من HTML
-// ========================================
+// ==========================================
+// SEARCH ENTER
+// ==========================================
+
+document.addEventListener(
+    "keydown",
+    event => {
+
+        if (
+            event.key === "Enter" &&
+            document.activeElement?.id ===
+                "searchInput"
+        ) {
+
+            searchCreator();
+        }
+    }
+);
+
+
+// ==========================================
+// HTML SECURITY
+// ==========================================
 
 function escapeHTML(text) {
 
-    return String(text)
-
+    return String(text ?? "")
         .replace(
             /&/g,
             "&amp;"
         )
-
         .replace(
             /</g,
             "&lt;"
         )
-
         .replace(
             />/g,
             "&gt;"
         )
-
         .replace(
             /"/g,
             "&quot;"
         )
-
         .replace(
             /'/g,
             "&#039;"
         );
-
 }
