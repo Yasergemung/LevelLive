@@ -1,274 +1,471 @@
+```html
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>YaserStream</title>
+    <title>YaserStream - منصة البثوث</title>
 
     <link rel="stylesheet" href="style.css">
+
 </head>
 
 <body>
 
+    <!-- ================= NAVBAR ================= -->
+
     <header class="navbar">
 
-        <a href="#" class="logo">
+        <div class="logo">
             Yaser<span>Stream</span>
-        </a>
+        </div>
 
-        <div class="search">
+        <div class="search-box">
+
             <input
                 type="text"
                 id="searchInput"
                 placeholder="ابحث عن صانع محتوى..."
             >
-            <button onclick="searchCreator()">🔍</button>
+
+            <button onclick="searchCreator()">
+                بحث
+            </button>
+
         </div>
 
         <div class="nav-buttons">
-            <button class="login-btn" onclick="openLogin()">
-                تسجيل الدخول
-            </button>
 
-            <button class="signup-btn" onclick="openRegister()">
+            <a href="login.html" class="nav-button">
+                تسجيل الدخول
+            </a>
+
+            <a href="register.html" class="nav-button primary">
                 إنشاء حساب
-            </button>
+            </a>
+
         </div>
 
     </header>
 
 
-    <main>
+    <!-- ================= HERO ================= -->
 
-        <section class="hero">
+    <section class="hero">
 
-            <div class="hero-content">
+        <div class="hero-content">
 
-                <div class="live-badge">
-                    🔴 LIVE
-                </div>
+            <h1>
+                شاهد أفضل
+                <span>صنّاع المحتوى</span>
+                مباشرة
+            </h1>
 
-                <h1>
-                    شاهد أفضل
-                    <span>صنّاع المحتوى</span>
-                    مباشرة
-                </h1>
+            <p>
+                استمتع بأفضل البثوث المباشرة للألعاب
+                والمحتوى المتنوع وتابع صناع المحتوى المفضلين لديك.
+            </p>
+
+            <div class="hero-buttons">
+
+                <a href="#live" class="hero-button primary">
+                    شاهد البثوث
+                </a>
+
+                <a href="creator-application.html" class="hero-button">
+                    كن صانع محتوى
+                </a>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ================= LIVE STREAMS ================= -->
+
+    <section class="section" id="live">
+
+        <div class="section-title">
+
+            <div>
+                <h2>🔴 البثوث المباشرة</h2>
 
                 <p>
-                    منصة بث مباشر للجيمينج وصنّاع المحتوى.
-                    شاهد البثوث، تابع صناع المحتوى المفضلين لديك
-                    وكن جزءًا من مجتمعنا.
+                    شاهد ما يحدث الآن
                 </p>
+            </div>
 
-                <div class="hero-buttons">
+            <a href="#" class="see-all">
+                عرض الكل
+            </a>
 
-                    <button class="primary-btn">
-                        🔴 شاهد البثوث
-                    </button>
+        </div>
 
-                    <button class="secondary-btn" onclick="openCreatorApplication()">
-                        🎥 كن صانع محتوى
-                    </button>
+
+        <div class="streams-grid">
+
+
+            <!-- STREAM 1 -->
+
+            <div class="stream-card">
+
+                <div class="stream-thumbnail">
+
+                    <div class="live-badge">
+                        LIVE
+                    </div>
+
+                    <div class="viewer-count">
+                        👁 1.2K
+                    </div>
+
+                    <div class="game-image minecraft">
+                        MINECRAFT
+                    </div>
+
+                </div>
+
+                <div class="stream-info">
+
+                    <h3>
+                        Minecraft Hardcore 🔥
+                    </h3>
+
+                    <p>
+                        YaserGaming
+                    </p>
+
+                    <span>
+                        Minecraft
+                    </span>
 
                 </div>
 
             </div>
 
-        </section>
 
+            <!-- STREAM 2 -->
 
-        <section class="section">
+            <div class="stream-card">
 
-            <div class="section-title">
+                <div class="stream-thumbnail">
 
-                <div>
-                    <h2>🔴 البثوث المباشرة</h2>
-                    <p>شاهد ما يحدث الآن</p>
+                    <div class="live-badge">
+                        LIVE
+                    </div>
+
+                    <div class="viewer-count">
+                        👁 850
+                    </div>
+
+                    <div class="game-image pubg">
+                        PUBG
+                    </div>
+
                 </div>
 
-                <button class="view-all">
-                    عرض الكل →
+                <div class="stream-info">
+
+                    <h3>
+                        PUBG Mobile Ranked
+                    </h3>
+
+                    <p>
+                        Ahmed Gaming
+                    </p>
+
+                    <span>
+                        PUBG
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- STREAM 3 -->
+
+            <div class="stream-card">
+
+                <div class="stream-thumbnail">
+
+                    <div class="live-badge">
+                        LIVE
+                    </div>
+
+                    <div class="viewer-count">
+                        👁 640
+                    </div>
+
+                    <div class="game-image chatting">
+                        JUST CHATTING
+                    </div>
+
+                </div>
+
+                <div class="stream-info">
+
+                    <h3>
+                        دردشة مع المتابعين ❤️
+                    </h3>
+
+                    <p>
+                        Mohamed Live
+                    </p>
+
+                    <span>
+                        Just Chatting
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- STREAM 4 -->
+
+            <div class="stream-card">
+
+                <div class="stream-thumbnail">
+
+                    <div class="live-badge">
+                        LIVE
+                    </div>
+
+                    <div class="viewer-count">
+                        👁 430
+                    </div>
+
+                    <div class="game-image valorant">
+                        VALORANT
+                    </div>
+
+                </div>
+
+                <div class="stream-info">
+
+                    <h3>
+                        Valorant Ranked 🎯
+                    </h3>
+
+                    <p>
+                        ProPlayer
+                    </p>
+
+                    <span>
+                        Valorant
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ================= POPULAR CREATORS ================= -->
+
+    <section class="section">
+
+        <div class="section-title">
+
+            <div>
+
+                <h2>
+                    ⭐ أشهر صناع المحتوى
+                </h2>
+
+                <p>
+                    تابع صناع المحتوى المفضلين لديك
+                </p>
+
+            </div>
+
+            <a href="#" class="see-all">
+                عرض الكل
+            </a>
+
+        </div>
+
+
+        <div class="creators-grid">
+
+
+            <!-- CREATOR 1 -->
+
+            <div class="creator-card">
+
+                <div class="creator-avatar">
+                    Y
+                </div>
+
+                <h3>
+                    YaserGaming
+                </h3>
+
+                <p>
+                    🎮 Minecraft
+                </p>
+
+                <button>
+                    متابعة
                 </button>
 
             </div>
 
 
-            <div class="streams">
+            <!-- CREATOR 2 -->
 
-                <div class="stream-card">
+            <div class="creator-card">
 
-                    <div class="thumbnail">
-                        <span class="live">LIVE</span>
-                        <span class="viewers">👁 1.2K</span>
-                    </div>
-
-                    <div class="stream-info">
-
-                        <div class="avatar">Y</div>
-
-                        <div>
-                            <h3>Minecraft Hardcore 🔥</h3>
-                            <p>YaserGaming</p>
-                            <small>🎮 Minecraft</small>
-                        </div>
-
-                    </div>
-
+                <div class="creator-avatar">
+                    A
                 </div>
 
+                <h3>
+                    Ahmed Gaming
+                </h3>
 
-                <div class="stream-card">
+                <p>
+                    🎮 PUBG
+                </p>
 
-                    <div class="thumbnail thumbnail-2">
-                        <span class="live">LIVE</span>
-                        <span class="viewers">👁 850</span>
-                    </div>
-
-                    <div class="stream-info">
-
-                        <div class="avatar">A</div>
-
-                        <div>
-                            <h3>PUBG Mobile 🔥</h3>
-                            <p>Ahmed Gaming</p>
-                            <small>🎮 PUBG</small>
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <div class="stream-card">
-
-                    <div class="thumbnail thumbnail-3">
-                        <span class="live">LIVE</span>
-                        <span class="viewers">👁 540</span>
-                    </div>
-
-                    <div class="stream-info">
-
-                        <div class="avatar">M</div>
-
-                        <div>
-                            <h3>Just Chatting</h3>
-                            <p>Mohamed</p>
-                            <small>💬 Just Chatting</small>
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-                <div class="stream-card">
-
-                    <div class="thumbnail thumbnail-4">
-                        <span class="live">LIVE</span>
-                        <span class="viewers">👁 320</span>
-                    </div>
-
-                    <div class="stream-info">
-
-                        <div class="avatar">K</div>
-
-                        <div>
-                            <h3>Valorant Ranked</h3>
-                            <p>Khaled Plays</p>
-                            <small>🎮 Valorant</small>
-                        </div>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </section>
-
-
-        <section class="section">
-
-            <div class="section-title">
-
-                <div>
-                    <h2>⭐ أشهر صناع المحتوى</h2>
-                    <p>اكتشف صناع محتوى جدد</p>
-                </div>
+                <button>
+                    متابعة
+                </button>
 
             </div>
 
 
-            <div class="creators">
+            <!-- CREATOR 3 -->
 
-                <div class="creator-card">
+            <div class="creator-card">
 
-                    <div class="creator-avatar">Y</div>
-
-                    <h3>YaserGaming</h3>
-
-                    <p>🎮 Gaming Creator</p>
-
-                    <button>
-                        متابعة
-                    </button>
-
+                <div class="creator-avatar">
+                    M
                 </div>
 
+                <h3>
+                    Mohamed Live
+                </h3>
 
-                <div class="creator-card">
+                <p>
+                    💬 Just Chatting
+                </p>
 
-                    <div class="creator-avatar">A</div>
-
-                    <h3>Ahmed Gaming</h3>
-
-                    <p>🎮 Gaming Creator</p>
-
-                    <button>
-                        متابعة
-                    </button>
-
-                </div>
-
-
-                <div class="creator-card">
-
-                    <div class="creator-avatar">M</div>
-
-                    <h3>Mohamed</h3>
-
-                    <p>🎥 Content Creator</p>
-
-                    <button>
-                        متابعة
-                    </button>
-
-                </div>
+                <button>
+                    متابعة
+                </button>
 
             </div>
 
-        </section>
 
-    </main>
+            <!-- CREATOR 4 -->
+
+            <div class="creator-card">
+
+                <div class="creator-avatar">
+                    P
+                </div>
+
+                <h3>
+                    ProPlayer
+                </h3>
+
+                <p>
+                    🎯 Valorant
+                </p>
+
+                <button>
+                    متابعة
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
 
 
-    <footer>
+    <!-- ================= CTA ================= -->
 
-        <h2>Yaser<span>Stream</span></h2>
+    <section class="creator-cta">
+
+        <div>
+
+            <h2>
+                🎥 هل تريد أن تصبح صانع محتوى؟
+            </h2>
+
+            <p>
+                قدم طلبك الآن، وبعد موافقة الإدارة
+                يمكنك بدء البث على YaserStream.
+            </p>
+
+            <a
+                href="creator-application.html"
+                class="hero-button primary"
+            >
+                تقديم طلب صانع محتوى
+            </a>
+
+        </div>
+
+    </section>
+
+
+    <!-- ================= FOOTER ================= -->
+
+    <footer class="footer">
+
+        <div class="footer-logo">
+            Yaser<span>Stream</span>
+        </div>
 
         <p>
-            منصة البث المباشر لصناع المحتوى.
+            منصة بث مباشر لصناع المحتوى واللاعبين.
         </p>
 
+        <div class="footer-links">
+
+            <a href="#">
+                الرئيسية
+            </a>
+
+            <a href="#">
+                البثوث
+            </a>
+
+            <a href="#">
+                صناع المحتوى
+            </a>
+
+            <a href="#">
+                سياسة الخصوصية
+            </a>
+
+        </div>
+
         <p class="copyright">
-            © 2026 YaserStream
+            © 2026 YaserStream. جميع الحقوق محفوظة.
         </p>
 
     </footer>
 
 
+    <!-- ================= JAVASCRIPT ================= -->
+
     <script src="script.js"></script>
 
 </body>
+
 </html>
+```
