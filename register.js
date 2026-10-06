@@ -33,11 +33,17 @@ registerForm.addEventListener("submit", async (event) => {
 
     try {
 
-        // إنشاء حساب Supabase Auth
         const { data, error } =
             await supabaseClient.auth.signUp({
                 email: email,
-                password: password
+                password: password,
+
+                options: {
+                    data: {
+                        username: username,
+                        display_name: displayName
+                    }
+                }
             });
 
         if (error) {
@@ -45,23 +51,7 @@ registerForm.addEventListener("submit", async (event) => {
         }
 
         if (!data.user) {
-            throw new Error("لم يتم إنشاء الحساب.");
-        }
-
-        // إنشاء Profile للمستخدم
-        const { error: profileError } =
-            await supabaseClient
-                .from("profiles")
-                .insert({
-                    id: data.user.id,
-                    username: username,
-                    display_name: displayName,
-                    role: "viewer",
-                    creator_approved: false
-                });
-
-        if (profileError) {
-            throw profileError;
+            throw new Error("لم يتم إنشاء المستخدم.");
         }
 
         message.textContent =
