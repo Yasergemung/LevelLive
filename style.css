@@ -986,3 +986,55 @@ footer span {
     }
 
 }
+/* ===============================
+   USER PROFILE
+================================ */
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.profile-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #7c3aed, #2563eb);
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.profile-info {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+
+.profile-info strong {
+    color: white;
+    font-size: 14px;
+}
+
+.profile-info small {
+    color: #9ca3af;
+    font-size: 12px;
+}
+
+.logout-button {
+    border: none;
+    padding: 9px 14px;
+    border-radius: 8px;
+    background: #ef4444;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.logout-button:hover {
+    background: #dc2626;
+}
