@@ -1,0 +1,13 @@
+{
+  "name": "levellive",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.117.3",
+    "livekit-server-sdk": "^2.19.1"
+  }
+}
