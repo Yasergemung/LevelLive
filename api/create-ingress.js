@@ -62,10 +62,8 @@ export default async function handler(req, res) {
         });
     }
 
-    let ingressInfo;
-
     try {
-        // التحقق من هوية المستخدم عبر Supabase
+        // التحقق من المستخدم
         const authClient = createClient(
             SUPABASE_URL,
             SUPABASE_ANON_KEY,
@@ -88,7 +86,7 @@ export default async function handler(req, res) {
             });
         }
 
-        // هذا المفتاح يبقى داخل الخادم فقط
+        // عميل Supabase بصلاحيات الخادم
         const adminClient = createClient(
             SUPABASE_URL,
             SUPABASE_SERVICE_ROLE_KEY,
@@ -100,10 +98,13 @@ export default async function handler(req, res) {
             }
         );
 
+        // جلب بيانات الحساب
         const { data: profile, error: profileError } =
             await adminClient
                 .from("profiles")
-                .select("id, username, display_name, role, creator_approved")
+                .select(
+                    "id, username, display_name, role, creator_approved"
+                )
                 .eq("id", user.id)
                 .single();
 
@@ -113,6 +114,7 @@ export default async function handler(req, res) {
             });
         }
 
+        // التأكد أن المستخدم Creator معتمد أو Admin
         const approved =
             profile.role === "admin" ||
             (
@@ -126,10 +128,21 @@ export default async function handler(req, res) {
             });
         }
 
+        // بيانات البث
         const title =
             typeof req.body?.title === "string"
                 ? req.body.title.trim().slice(0, 100)
                 : "";
+
+        const description =
+            typeof req.body?.description === "string"
+                ? req.body.description.trim().slice(0, 500)
+                : "";
+
+        const category =
+            typeof req.body?.category === "string"
+                ? req.body.category.trim().slice(0, 100)
+                : "Gaming";
 
         if (!title) {
             return res.status(400).json({
@@ -137,35 +150,69 @@ export default async function handler(req, res) {
             });
         }
 
-        // إنشاء غرفة منفصلة لهذا البث
+        // اسم الغرفة في LiveKit
         const roomName =
             "levellive-" +
             user.id.replace(/-/g, "").slice(0, 12) +
             "-" +
             Date.now();
 
+        // الاتصال بـ LiveKit
         const livekit = new LiveKitAPI({
             host: LIVEKIT_URL,
             apiKey: LIVEKIT_API_KEY,
             secret: LIVEKIT_API_SECRET
         });
 
-        // إنشاء مدخل RTMP لاستخدامه مع OBS
-        ingressInfo = await livekit.ingress.createIngress(
+        // إنشاء RTMP Ingress
+        const ingressInfo = await livekit.ingress.createIngress(
             IngressInput.RTMP_INPUT,
             {
                 name: title,
                 roomName,
                 participantIdentity: "streamer-" + user.id,
                 participantName:
-                    profile.display_name || profile.username || "Creator",
+                    profile.display_name ||
+                    profile.username ||
+                    "Creator",
                 enableTranscoding: true
             }
         );
 
+        // حفظ البث في Supabase
+        const { data: stream, error: streamError } =
+            await adminClient
+                .from("streams")
+                .insert({
+                    creator_id: user.id,
+                    title,
+                    description,
+                    category,
+                    provider: "livekit",
+                    provider_input_id: ingressInfo.ingressId,
+                    room_name: ingressInfo.roomName,
+                    playback_url: null,
+                    is_live: false,
+                    viewer_count: 0
+                })
+                .select()
+                .single();
+
+        if (streamError) {
+            console.error(
+                "Supabase stream insert failed:",
+                streamError.message
+            );
+
+            return res.status(500).json({
+                error: "تم إنشاء اتصال البث، لكن تعذر حفظ بيانات البث."
+            });
+        }
+
         return res.status(200).json({
             success: true,
-            message: "تم تجهيز اتصال البث بنجاح.",
+            message: "تم تجهيز البث بنجاح.",
+            streamId: stream.id,
             roomName: ingressInfo.roomName,
             ingressId: ingressInfo.ingressId,
             rtmpUrl: ingressInfo.url,
@@ -173,8 +220,10 @@ export default async function handler(req, res) {
         });
 
     } catch (error) {
-        // لا نطبع المفاتيح أو بيانات الاتصال السرية في السجلات
-        console.error("Create ingress failed:", error?.message);
+        console.error(
+            "Create ingress failed:",
+            error?.message || error
+        );
 
         return res.status(500).json({
             error: "تعذر إنشاء اتصال البث. راجع إعدادات الخادم."
