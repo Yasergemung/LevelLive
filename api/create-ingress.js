@@ -1,3 +1,4 @@
+
 import { createClient } from "@supabase/supabase-js";
 import { LiveKitAPI, IngressInput } from "livekit-server-sdk";
 
@@ -46,6 +47,8 @@ export default async function handler(req, res) {
         !LIVEKIT_API_KEY ||
         !LIVEKIT_API_SECRET
     ) {
+        console.error("Missing required server environment variables.");
+
         return res.status(500).json({
             error: "إعدادات الخادم غير مكتملة."
         });
@@ -63,7 +66,7 @@ export default async function handler(req, res) {
     }
 
     try {
-        // التحقق من المستخدم
+        // التحقق من جلسة المستخدم في Supabase
         const authClient = createClient(
             SUPABASE_URL,
             SUPABASE_ANON_KEY,
@@ -98,7 +101,7 @@ export default async function handler(req, res) {
             }
         );
 
-        // جلب بيانات الحساب
+        // التحقق من صلاحيات الحساب
         const { data: profile, error: profileError } =
             await adminClient
                 .from("profiles")
@@ -109,12 +112,16 @@ export default async function handler(req, res) {
                 .single();
 
         if (profileError || !profile) {
+            console.error(
+                "Profile lookup failed:",
+                profileError?.message || "Profile not found"
+            );
+
             return res.status(403).json({
                 error: "تعذر التحقق من حسابك."
             });
         }
 
-        // التأكد أن المستخدم Creator معتمد أو Admin
         const approved =
             profile.role === "admin" ||
             (
@@ -128,7 +135,7 @@ export default async function handler(req, res) {
             });
         }
 
-        // بيانات البث
+        // قراءة بيانات البث
         const title =
             typeof req.body?.title === "string"
                 ? req.body.title.trim().slice(0, 100)
@@ -142,7 +149,7 @@ export default async function handler(req, res) {
         const category =
             typeof req.body?.category === "string"
                 ? req.body.category.trim().slice(0, 100)
-                : "Gaming";
+                : "gaming";
 
         if (!title) {
             return res.status(400).json({
@@ -150,36 +157,48 @@ export default async function handler(req, res) {
             });
         }
 
-        // اسم الغرفة في LiveKit
+        // إنشاء اسم فريد لغرفة البث
         const roomName =
             "levellive-" +
             user.id.replace(/-/g, "").slice(0, 12) +
             "-" +
             Date.now();
 
-        // الاتصال بـ LiveKit
+        // إنشاء عميل LiveKit باستخدام بيانات الخادم
         const livekit = new LiveKitAPI({
-            host: LIVEKIT_URL,
-            apiKey: LIVEKIT_API_KEY,
-            secret: LIVEKIT_API_SECRET
+            host: LIVEKIT_URL.trim(),
+            apiKey: LIVEKIT_API_KEY.trim(),
+            secret: LIVEKIT_API_SECRET.trim()
         });
 
-        // إنشاء RTMP Ingress
-        const ingressInfo = await livekit.ingress.createIngress(
-            IngressInput.RTMP_INPUT,
-            {
-                name: title,
-                roomName,
-                participantIdentity: "streamer-" + user.id,
-                participantName:
-                    profile.display_name ||
-                    profile.username ||
-                    "Creator",
-                enableTranscoding: true
-            }
-        );
+        // إنشاء اتصال RTMP
+        let ingressInfo;
 
-        // حفظ البث في Supabase
+        try {
+            ingressInfo = await livekit.ingress.createIngress(
+                IngressInput.RTMP_INPUT,
+                {
+                    name: title,
+                    roomName,
+                    participantIdentity: "streamer-" + user.id,
+                    participantName:
+                        profile.display_name ||
+                        profile.username ||
+                        "Creator",
+                    enableTranscoding: true
+                }
+            );
+        } catch (error) {
+            // تسجيل تفاصيل الخطأ في سجل الخادم فقط
+            console.error(
+                "LiveKit ingress error:",
+                error?.message || error
+            );
+
+            throw new Error("LIVEKIT_INGRESS_FAILED");
+        }
+
+        // حفظ سجل البث في Supabase
         const { data: stream, error: streamError } =
             await adminClient
                 .from("streams")
@@ -190,7 +209,7 @@ export default async function handler(req, res) {
                     category,
                     provider: "livekit",
                     provider_input_id: ingressInfo.ingressId,
-                    room_name: ingressInfo.roomName,
+                    room_name: ingressInfo.roomName || roomName,
                     playback_url: null,
                     is_live: false,
                     viewer_count: 0
@@ -205,15 +224,18 @@ export default async function handler(req, res) {
             );
 
             return res.status(500).json({
-                error: "تم إنشاء اتصال البث، لكن تعذر حفظ بيانات البث."
+                error:
+                    "تم إنشاء اتصال البث، لكن تعذر حفظ بيانات البث. " +
+                    "لا تحاول إنشاء اتصال آخر قبل مراجعة السجل."
             });
         }
 
+        // إعادة بيانات اتصال البث لصانع المحتوى
         return res.status(200).json({
             success: true,
-            message: "تم تجهيز البث بنجاح.",
+            message: "تم تجهيز اتصال البث بنجاح.",
             streamId: stream.id,
-            roomName: ingressInfo.roomName,
+            roomName: ingressInfo.roomName || roomName,
             ingressId: ingressInfo.ingressId,
             rtmpUrl: ingressInfo.url,
             streamKey: ingressInfo.streamKey
@@ -226,7 +248,10 @@ export default async function handler(req, res) {
         );
 
         return res.status(500).json({
-            error: "تعذر إنشاء اتصال البث. راجع إعدادات الخادم."
+            error:
+                error?.message === "LIVEKIT_INGRESS_FAILED"
+                    ? "فشل LiveKit في إنشاء اتصال البث. راجع سجل Vercel."
+                    : "تعذر إنشاء اتصال البث. راجع إعدادات الخادم."
         });
     }
 }
