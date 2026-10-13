@@ -1,6 +1,10 @@
+
+const API_BASE = "https://levellive.vercel.app";
+
 let session = null;
 let profile = null;
 let activeStream = null;
+let creatingStream = false;
 
 document.addEventListener("DOMContentLoaded", init);
 
@@ -8,7 +12,9 @@ async function init() {
     bindEvents();
 
     try {
-        const { data, error } = await window.supabaseClient.auth.getSession();
+        const { data, error } =
+            await window.supabaseClient.auth.getSession();
+
         if (error) throw error;
 
         session = data.session;
@@ -21,7 +27,9 @@ async function init() {
         const { data: profileData, error: profileError } =
             await window.supabaseClient
                 .from("profiles")
-                .select("id, username, display_name, role, creator_approved, avatar_url")
+                .select(
+                    "id, username, display_name, role, creator_approved, avatar_url"
+                )
                 .eq("id", session.user.id)
                 .single();
 
@@ -29,10 +37,14 @@ async function init() {
 
         profile = profileData;
 
-        if (
-            profile.role !== "creator" &&
-            profile.role !== "admin"
-        ) {
+        const approved =
+            profile.role === "admin" ||
+            (
+                profile.role === "creator" &&
+                profile.creator_approved === true
+            );
+
+        if (!approved) {
             showAccessError("هذا الحساب ليس Creator معتمداً.");
             return;
         }
@@ -46,15 +58,43 @@ async function init() {
         await loadDashboard();
     } catch (error) {
         console.error(error);
-        showAccessError("حدث خطأ أثناء تحميل لوحة Creator: " + error.message);
+        showAccessError(
+            "حدث خطأ أثناء تحميل لوحة Creator: " + error.message
+        );
     }
 }
 
 function bindEvents() {
-    document.getElementById("streamForm")?.addEventListener("submit", startStream);
-    document.getElementById("endButton")?.addEventListener("click", endStream);
-    document.getElementById("refreshButton")?.addEventListener("click", loadDashboard);
-    document.getElementById("logoutButton")?.addEventListener("click", logout);
+    document.getElementById("streamForm")
+        ?.addEventListener("submit", startStream);
+
+    document.getElementById("endButton")
+        ?.addEventListener("click", endStream);
+
+    document.getElementById("refreshButton")
+        ?.addEventListener("click", refreshDashboard);
+
+    document.getElementById("logoutButton")
+        ?.addEventListener("click", logout);
+
+    document.getElementById("copyRtmpUrl")
+        ?.addEventListener("click", () => copyField("rtmpUrl"));
+
+    document.getElementById("copyStreamKey")
+        ?.addEventListener("click", () => copyField("streamKey"));
+
+    document.getElementById("toggleStreamKey")
+        ?.addEventListener("click", toggleStreamKey);
+}
+
+async function refreshDashboard() {
+    try {
+        await loadDashboard();
+        showMessage("تم تحديث البيانات.");
+    } catch (error) {
+        console.error(error);
+        showMessage("تعذر تحديث البيانات: " + error.message, true);
+    }
 }
 
 async function loadDashboard() {
@@ -64,23 +104,29 @@ async function loadDashboard() {
 async function loadStreams() {
     const { data, error } = await window.supabaseClient
         .from("streams")
-        .select("id, title, description, category, thumbnail_url, is_live, viewer_count, started_at, ended_at, created_at")
+        .select(
+            "id, title, description, category, thumbnail_url, is_live, viewer_count, started_at, ended_at, created_at, provider, provider_input_id, room_name"
+        )
         .eq("creator_id", session.user.id)
         .order("created_at", { ascending: false });
 
     if (error) throw error;
 
     const streams = data || [];
-    activeStream = streams.find(stream => stream.is_live === true) || null;
+
+    activeStream = streams.find(
+        stream =>
+            stream.provider === "livekit" &&
+            !stream.ended_at
+    ) || null;
 
     document.getElementById("totalStreams").textContent = streams.length;
+
     document.getElementById("currentViewers").textContent =
         activeStream?.viewer_count ?? 0;
 
     document.getElementById("lastStream").textContent =
-        streams[0]
-            ? formatDate(streams[0].created_at)
-            : "—";
+        streams[0] ? formatDate(streams[0].created_at) : "—";
 
     updateLiveUI();
     renderHistory(streams);
@@ -92,91 +138,181 @@ function updateLiveUI() {
     const startButton = document.getElementById("startButton");
     const endButton = document.getElementById("endButton");
     const liveStatus = document.getElementById("liveStatus");
+    const connection = document.getElementById("streamConnection");
 
     if (activeStream) {
-        badge.textContent = "LIVE";
-        badge.className = "badge live";
-        liveStatus.textContent = "مباشر";
+        badge.textContent = activeStream.is_live ? "LIVE" : "CONNECTING";
+        badge.className = activeStream.is_live
+            ? "badge live"
+            : "badge offline";
+
+        liveStatus.textContent = activeStream.is_live
+            ? "مباشر"
+            : "تم تجهيز الاتصال";
+
         startButton.disabled = true;
         endButton.disabled = false;
 
         current.className = "current-stream";
-        current.innerHTML = `
-            <div class="stream-active">
-                <div>
-                    <div class="stream-title">${escapeHTML(activeStream.title)}</div>
-                    <div class="stream-meta">
-                        ${getCategory(activeStream.category)}
-                        · بدأ ${formatDate(activeStream.started_at)}
-                        · 👁 ${Number(activeStream.viewer_count || 0)}
-                    </div>
-                </div>
-                <strong class="success">● LIVE</strong>
-            </div>
-        `;
+        current.textContent =
+            `${activeStream.title} — ` +
+            (activeStream.is_live
+                ? "البث مباشر."
+                : "الاتصال مجهز، بانتظار بدء إرسال الفيديو من OBS.");
 
-        document.getElementById("title").value = activeStream.title || "";
-        document.getElementById("description").value = activeStream.description || "";
-        document.getElementById("category").value = activeStream.category || "gaming";
-        document.getElementById("thumbnailUrl").value = activeStream.thumbnail_url || "";
+        document.getElementById("title").value =
+            activeStream.title || "";
+
+        document.getElementById("description").value =
+            activeStream.description || "";
+
+        document.getElementById("category").value =
+            activeStream.category || "gaming";
+
+        document.getElementById("thumbnailUrl").value =
+            activeStream.thumbnail_url || "";
+
+        connection.classList.remove("hidden");
     } else {
         badge.textContent = "OFFLINE";
         badge.className = "badge offline";
         liveStatus.textContent = "غير مباشر";
+
         startButton.disabled = false;
         endButton.disabled = true;
 
         current.className = "current-stream empty";
         current.textContent = "لا يوجد بث مباشر حالياً.";
+
+        connection.classList.add("hidden");
+        document.getElementById("rtmpUrl").value = "";
+        document.getElementById("streamKey").value = "";
+        document.getElementById("streamKey").type = "password";
+        document.getElementById("toggleStreamKey").textContent =
+            "إظهار مفتاح البث";
     }
 }
 
 async function startStream(event) {
     event.preventDefault();
 
+    if (creatingStream) return;
+
     if (activeStream) {
-        showMessage("يوجد بث مباشر بالفعل.", true);
+        showMessage("يوجد اتصال بث قائم بالفعل.", true);
         return;
     }
 
     const title = document.getElementById("title").value.trim();
-    const description = document.getElementById("description").value.trim();
+    const description =
+        document.getElementById("description").value.trim();
+
     const category = document.getElementById("category").value;
-    const thumbnail_url = document.getElementById("thumbnailUrl").value.trim() || null;
+    const thumbnail_url =
+        document.getElementById("thumbnailUrl").value.trim() || null;
 
     if (!title) {
         showMessage("اكتب عنوان البث أولاً.", true);
         return;
     }
 
+    creatingStream = true;
     setButtons(true);
-    showMessage("جاري بدء البث...");
+    showMessage("جاري تجهيز اتصال البث...");
 
     try {
-        const { data, error } = await window.supabaseClient
-            .from("streams")
-            .insert({
-                creator_id: session.user.id,
-                title,
-                description: description || null,
-                category,
-                thumbnail_url,
-                is_live: true,
-                viewer_count: 0,
-                started_at: new Date().toISOString()
-            })
-            .select()
-            .single();
+        const { data: authData, error: authError } =
+            await window.supabaseClient.auth.getSession();
 
-        if (error) throw error;
+        if (authError) throw authError;
 
-        activeStream = data;
-        showMessage("تم إنشاء البث وبدؤه بنجاح ✅", false);
+        const accessToken = authData.session?.access_token;
+
+        if (!accessToken) {
+            throw new Error("انتهت جلسة الدخول. سجّل الدخول مجددًا.");
+        }
+
+        const response = await fetch(
+            `${API_BASE}/api/create-ingress`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${accessToken}`
+                },
+                body: JSON.stringify({
+                    title,
+                    description,
+                    category
+                })
+            }
+        );
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || !result.success) {
+            throw new Error(
+                result.error || `فشل تجهيز البث (HTTP ${response.status}).`
+            );
+        }
+
+        // تحديث صورة البث بعد إنشاء السجل.
+        // فشل تحديث الصورة لا يلغي اتصال RTMP الذي تم إنشاؤه.
+        if (thumbnail_url && result.streamId) {
+            const { error: thumbnailError } =
+                await window.supabaseClient
+                    .from("streams")
+                    .update({ thumbnail_url })
+                    .eq("id", result.streamId)
+                    .eq("creator_id", session.user.id);
+
+            if (thumbnailError) {
+                console.warn(
+                    "تعذر حفظ صورة البث:",
+                    thumbnailError.message
+                );
+            }
+        }
+
+        document.getElementById("rtmpUrl").value =
+            result.rtmpUrl || "";
+
+        document.getElementById("streamKey").value =
+            result.streamKey || "";
+
+        document.getElementById("streamConnection")
+            .classList.remove("hidden");
+
+        activeStream = {
+            id: result.streamId,
+            title,
+            description,
+            category,
+            thumbnail_url,
+            provider: "livekit",
+            provider_input_id: result.ingressId,
+            room_name: result.roomName,
+            is_live: false,
+            viewer_count: 0,
+            created_at: new Date().toISOString(),
+            started_at: null,
+            ended_at: null
+        };
+
+        showMessage(
+            "تم تجهيز اتصال البث! انسخ بيانات RTMP إلى OBS وابدأ إرسال الفيديو. هذا لا يعني أن البث أصبح مباشرًا بعد."
+        );
+
         await loadStreams();
     } catch (error) {
-        console.error(error);
-        showMessage("تعذر بدء البث: " + error.message, true);
+        console.error("Start stream error:", error);
+
+        showMessage(
+            "تعذر تجهيز البث: " + error.message,
+            true
+        );
     } finally {
+        creatingStream = false;
         setButtons(false);
     }
 }
@@ -184,10 +320,16 @@ async function startStream(event) {
 async function endStream() {
     if (!activeStream) return;
 
-    if (!confirm("هل تريد إنهاء البث الحالي؟")) return;
+    if (!confirm(
+        "هل تريد إنهاء سجل البث؟ أوقف البث من OBS أولاً."
+    )) {
+        return;
+    }
 
     setButtons(true);
-    showMessage("جاري إنهاء البث...");
+    showMessage(
+        "جاري إنهاء سجل البث. أوقف الإرسال من OBS إن لم تفعل ذلك."
+    );
 
     try {
         const { error } = await window.supabaseClient
@@ -202,12 +344,25 @@ async function endStream() {
         if (error) throw error;
 
         activeStream = null;
+
         document.getElementById("streamForm").reset();
-        showMessage("تم إنهاء البث بنجاح ✅", false);
+        document.getElementById("streamConnection")
+            .classList.add("hidden");
+
+        document.getElementById("rtmpUrl").value = "";
+        document.getElementById("streamKey").value = "";
+
+        showMessage(
+            "تم إنهاء سجل البث. تأكد من إيقاف الإرسال في OBS أيضًا."
+        );
+
         await loadStreams();
     } catch (error) {
         console.error(error);
-        showMessage("تعذر إنهاء البث: " + error.message, true);
+        showMessage(
+            "تعذر إنهاء سجل البث: " + error.message,
+            true
+        );
     } finally {
         setButtons(false);
     }
@@ -215,10 +370,11 @@ async function endStream() {
 
 function renderHistory(streams) {
     const history = document.getElementById("history");
-    const past = streams.filter(stream => !stream.is_live);
+    const past = streams.filter(stream => stream.ended_at);
 
     if (!past.length) {
-        history.innerHTML = `<div class="current-stream empty">لا توجد بثوث سابقة.</div>`;
+        history.innerHTML =
+            '<div class="current-stream empty">لا توجد بثوث سابقة.</div>';
         return;
     }
 
@@ -233,29 +389,24 @@ function renderHistory(streams) {
             </div>
             <div>
                 <strong>${Number(stream.viewer_count || 0)} 👁</strong>
-                <p>${stream.ended_at ? "انتهى " + formatDate(stream.ended_at) : ""}</p>
+                <p>انتهى ${formatDate(stream.ended_at)}</p>
             </div>
         </div>
     `).join("");
 }
 
 function setButtons(loading) {
-    const start = document.getElementById("startButton");
-    const end = document.getElementById("endButton");
+    document.getElementById("startButton").disabled =
+        loading || !!activeStream;
 
-    if (loading) {
-        start.disabled = true;
-        end.disabled = true;
-    } else {
-        start.disabled = !!activeStream;
-        end.disabled = !activeStream;
-    }
+    document.getElementById("endButton").disabled =
+        loading || !activeStream;
 }
 
 function showMessage(text, isError = false) {
-    const el = document.getElementById("message");
-    el.textContent = text;
-    el.className = "message " + (isError ? "error" : "success");
+    const element = document.getElementById("message");
+    element.textContent = text;
+    element.className = "message " + (isError ? "error" : "success");
 }
 
 function showAccessError(text) {
@@ -269,17 +420,61 @@ async function logout() {
     window.location.href = "./index.html";
 }
 
+async function copyField(id) {
+    const value = document.getElementById(id).value;
+
+    if (!value) {
+        showMessage("لا توجد بيانات لنسخها.", true);
+        return;
+    }
+
+    try {
+        await navigator.clipboard.writeText(value);
+        showMessage("تم النسخ بنجاح.");
+    } catch {
+        const input = document.getElementById(id);
+        input.type = "text";
+        input.select();
+
+        const copied = document.execCommand("copy");
+
+        input.setSelectionRange(0, 0);
+
+        if (id === "streamKey") {
+            input.type = "password";
+        }
+
+        showMessage(
+            copied ? "تم النسخ بنجاح." : "تعذر النسخ تلقائيًا. انسخ النص يدويًا.",
+            !copied
+        );
+    }
+}
+
+function toggleStreamKey() {
+    const input = document.getElementById("streamKey");
+    const button = document.getElementById("toggleStreamKey");
+
+    const showing = input.type === "text";
+
+    input.type = showing ? "password" : "text";
+    button.textContent = showing
+        ? "إظهار مفتاح البث"
+        : "إخفاء مفتاح البث";
+}
+
 function getCategory(category) {
     return {
         gaming: "🎮 Gaming",
         just_chatting: "💬 Just Chatting",
         education: "📚 Education",
         other: "⭐ Other"
-    }[category] || category;
+    }[category] || category || "Other";
 }
 
 function formatDate(value) {
     if (!value) return "—";
+
     return new Date(value).toLocaleString("ar-EG", {
         dateStyle: "medium",
         timeStyle: "short"
