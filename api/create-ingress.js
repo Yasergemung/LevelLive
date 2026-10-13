@@ -242,10 +242,13 @@ export default async function handler(req, res) {
         });
 
     } catch (error) {
-        console.error(
-            "Create ingress failed:",
-            error?.message || error
-        );
+   console.error("LiveKit ingress error:", {
+    name: error?.name,
+    message: error?.message,
+    code: error?.code,
+    status: error?.status,
+    metadata: error?.metadata
+});
 
         return res.status(500).json({
             error:
